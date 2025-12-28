@@ -1,4 +1,4 @@
-name: DSP Spectrogram Complete Pipeline
+name: MMSP Build & Run (Method 0~3)
 
 on:
   push:
