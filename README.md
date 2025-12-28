@@ -65,6 +65,8 @@
 - 建立 GitHub Actions 自動化編譯與執行測試流程
 
 ---
+## 心得及感想
+在這次 MMSP 期末專題中，透過實作一套完整的 BMP 影像壓縮與還原系統，我對課堂上所學的影像壓縮觀念有了更實際的體會。一開始從最基本的 RGB 拆分與影像重建做起，讓我了解影像資料在電腦中實際儲存與處理的方式；接著在 Method 1 中進行 YCbCr 色彩空間轉換、8×8 區塊切分、DCT 以及量化時，才真正理解為什麼頻域轉換能有效集中能量，進而達到壓縮的效果。之後在 Method 2 與 Method 3 實作 DPCM、ZigZag 掃描、RLE 以及 Huffman Coding 的過程中，讓我感受到資料統計特性對壓縮效率的影響，也發現 encoder 與 decoder 在資料格式設計上必須非常嚴謹，只要有一個地方對不上，還原出來的影像就會出現錯誤。除此之外，這次專題也讓我實際體驗到撰寫完整系統所需要的耐心，特別是在除錯 decoder 以及確認每一個方法都能正確還原影像時花了不少時間。最後透過 GitHub Actions 建立自動化編譯與測試流程，讓我體會到自動化工具在實務開發中的重要性，也讓整個專題流程更加完整，對我之後進行較大型程式專案有很大的幫助。
 
 ## 編譯指令
 
@@ -104,4 +106,5 @@ diff Kimberly.bmp ResKimberly.bmp
 # ===== Method 3 : Huffman Coding (Binary) =====
 ./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin
 ./decoder 3 ResKimberly.bmp binary codebook.txt huffman_code.bin
+
 
