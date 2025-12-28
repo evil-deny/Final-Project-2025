@@ -1,4 +1,4 @@
-name: MMSP Final Project – Complete Pipeline (Method 0–3)
+name: MMSP Final Project – Build & Run (Method 0~3)
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v4
 
     # --------------------------------------------------
-    # 2. Install dependencies
+    # 2. Install tools
     # --------------------------------------------------
     - name: Install build tools
       run: |
@@ -28,32 +28,32 @@ jobs:
     # --------------------------------------------------
     # 3. Build encoder / decoder
     # --------------------------------------------------
-    - name: Compile C Code
+    - name: Build encoder / decoder
       run: |
-        echo "Compiling encoder / decoder..."
         gcc encoder.c -O2 -Wall -lm -o encoder
         gcc decoder.c -O2 -Wall -lm -o decoder
         chmod +x encoder decoder
 
+    # ★★★★★ 關鍵修正：讓 system("encoder ...") 找得到 ★★★★★
+    - name: Add encoder to PATH
+      run: echo "$PWD" >> $GITHUB_PATH
+
     # --------------------------------------------------
-    # 4. Prepare test BMP (Kimberly.bmp)
+    # 4. Prepare minimal test BMP (8x8)
     # --------------------------------------------------
     - name: Prepare test BMP
       run: |
         python3 << 'EOF'
         import struct
-
         W, H = 8, 8
         row_size = ((W*3+3)//4)*4
         img_size = row_size * H
         file_size = 54 + img_size
 
         header = struct.pack("<2sIHHI", b"BM", file_size, 0, 0, 54)
-        info = struct.pack(
-            "<IIIHHIIIIII",
+        info = struct.pack("<IIIHHIIIIII",
             40, W, H, 1, 24, 0,
-            img_size, 3780, 3780, 0, 0
-        )
+            img_size, 3780, 3780, 0, 0)
 
         with open("Kimberly.bmp","wb") as f:
             f.write(header)
@@ -67,70 +67,64 @@ jobs:
         EOF
 
     # --------------------------------------------------
-    # 5. Method 0
+    # Method 0
     # --------------------------------------------------
     - name: Run Method 0
       run: |
         echo "===== Method 0 ====="
         ./encoder 0 Kimberly.bmp R.txt G.txt B.txt dim.txt
         ./decoder 0 ResKimberly.bmp R.txt G.txt B.txt dim.txt
-
-        echo "Diff check (Method 0):"
-        diff Kimberly.bmp ResKimberly.bmp || echo "Method 0: diff exists (expected if lossy)"
+        diff Kimberly.bmp ResKimberly.bmp || echo "Method 0 diff exists"
 
     # --------------------------------------------------
-    # 6. Method 1
+    # Method 1
     # --------------------------------------------------
     - name: Run Method 1
       run: |
         echo "===== Method 1 ====="
         ./encoder 1 Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
-          qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+            qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+
+        ./decoder 1 QResKimberly.bmp Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+            qF_Y.raw qF_Cb.raw qF_Cr.raw
 
         ./decoder 1 ResKimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
-          qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+            qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
 
-        echo "Diff check (Method 1):"
-        diff Kimberly.bmp ResKimberly.bmp || echo "Method 1: diff exists (expected)"
+        diff Kimberly.bmp ResKimberly.bmp || echo "Method 1 diff exists (lossy expected)"
 
     # --------------------------------------------------
-    # 7. Method 2 (ascii + binary)
+    # Method 2 (ascii + binary)
     # --------------------------------------------------
     - name: Run Method 2
       run: |
-        echo "===== Method 2 (ascii) ====="
+        echo "===== Method 2 ====="
         ./encoder 2 Kimberly.bmp ascii rle_code.txt
         ./decoder 2 QResKimberly.bmp ascii rle_code.txt
 
-        echo "===== Method 2 (binary) ====="
         ./encoder 2 Kimberly.bmp binary rle_code.bin
         ./decoder 2 QResKimberly.bmp binary rle_code.bin
 
     # --------------------------------------------------
-    # 8. Method 3 (depends on Method 2 binary)
+    # Method 3 (ascii + binary)
+    # ★ Method 3 依賴 Method 2 binary，現在 PATH 已修好
     # --------------------------------------------------
     - name: Run Method 3
       run: |
         echo "===== Method 3 ====="
-
-        # 明確先確保 Method 2 binary 已存在
-        ./encoder 2 Kimberly.bmp binary rle_code.bin
-
-        echo "--- Method 3 ascii ---"
         ./encoder 3 Kimberly.bmp ascii codebook.txt huffman_code.txt
         ./decoder 3 QResKimberly.bmp ascii codebook.txt huffman_code.txt
 
-        echo "--- Method 3 binary ---"
         ./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin
         ./decoder 3 QResKimberly.bmp binary codebook.txt huffman_code.bin
 
     # --------------------------------------------------
-    # 9. Upload artifacts
+    # Upload artifacts
     # --------------------------------------------------
     - name: Upload Results (Artifacts)
       uses: actions/upload-artifact@v4
       with:
-        name: mmsp-final-results
+        name: MMSP-Method0-3-Results
         path: |
           *.bmp
           *.txt
