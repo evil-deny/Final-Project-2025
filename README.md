@@ -17,6 +17,31 @@
 
 ---
 
+## 檔案說明
+
+| 檔名 | 說明 |
+|---|---|
+| `encoder.c` | Encoder 主程式（Method 0–3） |
+| `decoder.c` | Decoder 主程式（Method 0–3） |
+| `Kimberly.bmp` | 原始輸入影像 |
+| `ResKimberly.bmp` | Decoder 還原影像 |
+| `Qt_Y.txt / Qt_Cb.txt / Qt_Cr.txt` | Quantization Tables |
+| `qF_*.raw` | 量化後 DCT 係數 |
+| `eF_*.raw` | Quantization Error |
+| `rle_code.txt / rle_code.bin` | RLE 編碼結果 |
+| `codebook.txt` | Huffman Codebook |
+| `huffman_code.txt / huffman_code.bin` | Huffman Bitstream |
+| `.github/workflows/main.yml` | GitHub Actions CI |
+
+---
+
+## 編譯方式
+
+```bash
+gcc encoder.c -O2 -Wall -lm -o encoder
+gcc decoder.c -O2 -Wall -lm -o decoder
+
+
 ## 系統架構與流程（Block Diagram 文字描述）
 
 ### Method 0：RGB Baseline
