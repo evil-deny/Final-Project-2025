@@ -34,15 +34,6 @@
 | `.github/workflows/main.yml` | GitHub Actions CI |
 
 ---
-## 環境與編譯執行
-
-## 系統架構與流程（Block Diagram 文字描述）
-
-### Method 0：RGB Baseline
-
-> 本專題以文字化 block diagram 與實際產生之 artifacts（txt / raw / bin）呈現系統架構，
-> 未額外繪製圖檔。
-
 
 ## 實作進度與工作紀錄
 
@@ -72,26 +63,6 @@
 ### Phase 5：系統整合與 CI
 - 整合 encoder / decoder（Method 0–3）
 - 建立 GitHub Actions 自動化編譯與執行測試流程
-
----
-
-## 檔案說明
-
-### encoder.c
-負責影像編碼，支援 Method 0 / 1 / 2 / 3，
-並可依參數選擇 ASCII 或 Binary 輸出格式。
-
-### decoder.c
-對應各編碼方法進行解碼，最終還原 BMP 影像。
-
-### *.txt
-人類可讀之中間結果（RGB、RLE、Codebook 等）。
-
-### *.raw / *.bin
-Binary 格式資料，用於驗證實際壓縮效果。
-
-### .github/workflows/
-定義 CI/CD 流程，自動編譯並執行各種 Method 測試。
 
 ---
 
