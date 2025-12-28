@@ -33,18 +33,10 @@ jobs:
         gcc encoder.c -O2 -Wall -lm -o encoder
         gcc decoder.c -O2 -Wall -lm -o decoder
         chmod +x encoder decoder
+        ls -lh encoder decoder
 
     # --------------------------------------------------
-    # 4. Export PATH (⭐ 關鍵，Method 3 需要)
-    # --------------------------------------------------
-    - name: Export PATH for encoder / decoder
-      run: |
-        echo "PATH=$PATH:$(pwd)" >> "$GITHUB_ENV"
-        which encoder
-        which decoder
-
-    # --------------------------------------------------
-    # 5. Prepare test BMP (8x8)
+    # 4. Prepare test BMP (8x8)
     # --------------------------------------------------
     - name: Prepare test BMP
       run: |
@@ -100,7 +92,7 @@ jobs:
         diff Kimberly.bmp ResKimberly.bmp || true
 
     # --------------------------------------------------
-    # Method 2 (ascii + binary)
+    # Method 2 (ASCII + Binary)
     # --------------------------------------------------
     - name: Run Method 2
       run: |
@@ -111,15 +103,13 @@ jobs:
         ./decoder 2 QResKimberly.bmp binary rle_code.bin
 
     # --------------------------------------------------
-    # Method 3 (⭐ 關鍵：先保證 Method 2 binary 已存在)
+    # Method 3
     # --------------------------------------------------
     - name: Run Method 3
       run: |
-        # Method 3 ASCII
         ./encoder 3 Kimberly.bmp ascii codebook.txt huffman_code.txt
         ./decoder 3 QResKimberly.bmp ascii codebook.txt huffman_code.txt
 
-        # Method 3 BINARY
         ./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin
         ./decoder 3 QResKimberly.bmp binary codebook.txt huffman_code.bin
 
