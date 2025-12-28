@@ -1,4 +1,4 @@
-name: MMSP Final Project – Build & Run
+name: MMSP Final Project – Build & Run (Method 0~3)
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v4
 
     # --------------------------------------------------
-    # 2. Install dependencies
+    # 2. Install tools
     # --------------------------------------------------
     - name: Install build tools
       run: |
@@ -32,11 +32,17 @@ jobs:
       run: |
         gcc encoder.c -O2 -Wall -lm -o encoder
         gcc decoder.c -O2 -Wall -lm -o decoder
-        chmod +x encoder decoder
-        ls -lh encoder decoder
 
     # --------------------------------------------------
-    # 4. Prepare test BMP (8x8)
+    # 4. Make encoder/decoder visible to system()
+    # --------------------------------------------------
+    - name: Install encoder into PATH (symlink)
+      run: |
+        sudo ln -sf "$PWD/encoder" /usr/local/bin/encoder
+        sudo ln -sf "$PWD/decoder" /usr/local/bin/decoder
+
+    # --------------------------------------------------
+    # 5. Prepare test BMP (8x8)
     # --------------------------------------------------
     - name: Prepare test BMP
       run: |
@@ -83,38 +89,35 @@ jobs:
         ./encoder 1 Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
           qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
 
-        ./decoder 1 QResKimberly.bmp Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
-          qF_Y.raw qF_Cb.raw qF_Cr.raw
-
         ./decoder 1 ResKimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
           qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
 
         diff Kimberly.bmp ResKimberly.bmp || true
 
     # --------------------------------------------------
-    # Method 2 (ASCII + Binary)
+    # Method 2
     # --------------------------------------------------
     - name: Run Method 2
       run: |
         ./encoder 2 Kimberly.bmp ascii rle_code.txt
-        ./decoder 2 QResKimberly.bmp ascii rle_code.txt
+        ./decoder 2 ResKimberly.bmp ascii rle_code.txt
 
         ./encoder 2 Kimberly.bmp binary rle_code.bin
-        ./decoder 2 QResKimberly.bmp binary rle_code.bin
+        ./decoder 2 ResKimberly.bmp binary rle_code.bin
 
     # --------------------------------------------------
-    # Method 3
+    # Method 3 (depends on Method 2 binary)
     # --------------------------------------------------
     - name: Run Method 3
       run: |
         ./encoder 3 Kimberly.bmp ascii codebook.txt huffman_code.txt
-        ./decoder 3 QResKimberly.bmp ascii codebook.txt huffman_code.txt
+        ./decoder 3 ResKimberly.bmp ascii codebook.txt huffman_code.txt
 
         ./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin
-        ./decoder 3 QResKimberly.bmp binary codebook.txt huffman_code.bin
+        ./decoder 3 ResKimberly.bmp binary codebook.txt huffman_code.bin
 
     # --------------------------------------------------
-    # Upload Artifacts
+    # Upload artifacts
     # --------------------------------------------------
     - name: Upload Results (Artifacts)
       uses: actions/upload-artifact@v4
