@@ -1,4 +1,4 @@
-name: MMSP Build & Run (Method 0~3)
+name: MMSP Final Project – Build & Run
 
 on:
   push:
@@ -7,92 +7,97 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  process-spectrograms:
+  build-and-run:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. 下載你的程式碼
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    # 2. 設定 Python 環境
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    # 3. 安裝必要的套件 (C 編譯器 & Python Libraries)
-    - name: Install Dependencies
+    - name: Install build tools
       run: |
-        sudo apt-get update && sudo apt-get install -y gcc
-        pip install numpy matplotlib scipy
+        sudo apt-get update
+        sudo apt-get install -y build-essential python3
 
-    # 4. 編譯 C 程式 (Signal Gen & Spectrogram)
-    - name: Compile C Code
+    - name: Build encoder / decoder
       run: |
-        echo "Compiling C files..."
-        gcc -o signal_gen signal_gen.c -lm
-        gcc -o spectrogram spectrogram.c -lm
-        chmod +x signal_gen spectrogram
+        gcc encoder.c -O2 -Wall -lm -o encoder
+        gcc decoder.c -O2 -Wall -lm -o decoder
 
-    # 5. 準備所有 WAV 檔案 (生成 + 下載)
-    - name: Prepare WAV Files
+    # --------------------------------------------------
+    # Prepare minimal test BMP (8x8)
+    # --------------------------------------------------
+    - name: Prepare test BMP
       run: |
-        echo "Generating synthetic wav files..."
-        ./signal_gen 8000 s-8kHz.wav
-        ./signal_gen 16000 s-16kHz.wav
+        python3 << 'EOF'
+        import struct
 
-        echo "Downloading real speech wav files..."
-        # 注意：請確認此下載連結是否為您的正確 Repo 來源，若檔案已在 Repo 內可移除此段
-        BASE_URL="https://github.com/cychiang-ntpu/mini-project-5-spectrogram/raw/main"
-        # 使用 || true 避免如果檔案不存在導致整個流程失敗 (若您已上傳檔案到 repo 則不需要 curl)
-        curl -L -o aeueo-8kHz.wav "$BASE_URL/aeueo-8Hz.wav" || echo "Download skipped or failed"
-        curl -L -o aeueo-16kHz.wav "$BASE_URL/aeueo-16kHz.wav" || echo "Download skipped or failed"
+        W, H = 8, 8
+        row_size = ((W*3+3)//4)*4
+        img_size = row_size * H
+        file_size = 54 + img_size
 
-    # 6. 執行核心任務：4個檔案 x 4種設定 = 16次執行
-    - name: Run Spectrogram Analysis & Plotting
+        header = struct.pack("<2sIHHI", b"BM", file_size, 0, 0, 54)
+        info = struct.pack(
+            "<IIIHHIIIIII",
+            40, W, H, 1, 24, 0,
+            img_size, 3780, 3780, 0, 0
+        )
+
+        with open("test.bmp","wb") as f:
+            f.write(header)
+            f.write(info)
+            for y in range(H):
+                row = bytearray()
+                for x in range(W):
+                    row += bytes([x*30, y*30, 128])
+                row += b'\x00' * (row_size - W*3)
+                f.write(row)
+        EOF
+
+    # --------------------------------------------------
+    # Method 0
+    # --------------------------------------------------
+    - name: Run Method 0
       run: |
-        # 定義要處理的檔案列表
-        files=("s-8kHz.wav" "s-16kHz.wav" "aeueo-8kHz.wav" "aeueo-16kHz.wav")
+        ./encoder 0 test.bmp R.txt G.txt B.txt dim.txt
+        ./decoder 0 out0.bmp R.txt G.txt B.txt dim.txt
 
-        for wav in "${files[@]}"; do
-          # 檢查檔案是否存在，避免報錯
-          if [ ! -f "$wav" ]; then
-            echo "File $wav not found, skipping..."
-            continue
-          fi
+    # --------------------------------------------------
+    # Method 1 (basic)
+    # --------------------------------------------------
+    - name: Run Method 1
+      run: |
+        ./encoder 1 test.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+                   qF_Y.raw qF_Cb.raw qF_Cr.raw \
+                   eF_Y.raw eF_Cb.raw eF_Cr.raw
 
-          # 取得不含副檔名的名稱
-          base=$(basename "$wav" .wav)
-          echo "================ Processing: $base ================"
+        ./decoder 1 out1.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+                   qF_Y.raw qF_Cb.raw qF_Cr.raw \
+                   eF_Y.raw eF_Cb.raw eF_Cr.raw
 
-          # --- Setting 1: 32ms Window, Rectangular, 32ms DFT, 10ms Interval ---
-          echo "Running Setting 1..."
-          ./spectrogram 32 rectangular 32 10 "$wav" "${base}.Set1.txt"
-          python3 spectshow.py "$wav" "${base}.Set1.txt" "${base}.Set1.pdf"
+    # --------------------------------------------------
+    # Method 2
+    # --------------------------------------------------
+    - name: Run Method 2
+      run: |
+        ./encoder 2 test.bmp ascii rle.txt
+        ./decoder 2 out2a.bmp ascii rle.txt
 
-          # --- Setting 2: 32ms Window, Hamming, 32ms DFT, 10ms Interval ---
-          echo "Running Setting 2..."
-          ./spectrogram 32 hamming 32 10 "$wav" "${base}.Set2.txt"
-          python3 spectshow.py "$wav" "${base}.Set2.txt" "${base}.Set2.pdf"
+        ./encoder 2 test.bmp binary rle.bin
+        ./decoder 2 out2b.bmp binary rle.bin
 
-          # --- Setting 3: 30ms Window, Rectangular, 32ms DFT, 10ms Interval ---
-          echo "Running Setting 3..."
-          ./spectrogram 30 rectangular 32 10 "$wav" "${base}.Set3.txt"
-          python3 spectshow.py "$wav" "${base}.Set3.txt" "${base}.Set3.pdf"
+    # --------------------------------------------------
+    # Method 3
+    # --------------------------------------------------
+    - name: Run Method 3
+      run: |
+        ./encoder 3 test.bmp ascii codebook.txt huffman.txt
+        ./decoder 3 out3a.bmp ascii codebook.txt huffman.txt
 
-          # --- Setting 4: 30ms Window, Hamming, 32ms DFT, 10ms Interval ---
-          echo "Running Setting 4..."
-          ./spectrogram 30 hamming 32 10 "$wav" "${base}.Set4.txt"
-          python3 spectshow.py "$wav" "${base}.Set4.txt" "${base}.Set4.pdf"
-        done
+        ./encoder 3 test.bmp binary codebook.txt huffman.bin
+        ./decoder 3 out3b.bmp binary codebook.txt huffman.bin
 
-    # 7. 打包所有結果供下載
-    - name: Upload Results (Artifacts)
-      uses: actions/upload-artifact@v4
-      with:
-        name: All-Spectrogram-Results
-        path: |
-          *.pdf
-          *.txt
-          *.wav
+    - name: List outputs
+      run: |
+        ls -lh
