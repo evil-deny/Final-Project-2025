@@ -81,7 +81,7 @@ jobs:
         ./encoder 2 Kimberly.bmp ascii rle_code.txt 
         ./decoder 2 QResKimberly.bmp ascii rle_code.txt 
 
-        ./encoder 2 Kimberly.bmp ascii rle_code.txt 
+        ./encoder 2 Kimberly.bmp binary rle_code.bin
         ./decoder 2 QResKimberly.bmp binary rle_code.bin 
 
     # --------------------------------------------------
