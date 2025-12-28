@@ -34,13 +34,7 @@
 | `.github/workflows/main.yml` | GitHub Actions CI |
 
 ---
-
-## 編譯方式
-
-```bash
-gcc encoder.c -O2 -Wall -lm -o encoder
-gcc decoder.c -O2 -Wall -lm -o decoder
-
+## 環境與編譯執行
 
 ## 系統架構與流程（Block Diagram 文字描述）
 
@@ -49,7 +43,6 @@ gcc decoder.c -O2 -Wall -lm -o decoder
 > 本專題以文字化 block diagram 與實際產生之 artifacts（txt / raw / bin）呈現系統架構，
 > 未額外繪製圖檔。
 
----
 
 ## 實作進度與工作紀錄
 
@@ -102,18 +95,42 @@ Binary 格式資料，用於驗證實際壓縮效果。
 
 ---
 
-## 編譯方式
+## 編譯指令
 
 ```bash
 gcc encoder.c -O2 -Wall -lm -o encoder
 gcc decoder.c -O2 -Wall -lm -o decoder
 
-Method 0：RGB 拆分與還原
-Encoder
+# ===== Build =====
+gcc encoder.c -O2 -Wall -lm -o encoder
+gcc decoder.c -O2 -Wall -lm -o decoder
+
+# ===== Method 0 : RGB Split & Rebuild =====
 ./encoder 0 Kimberly.bmp R.txt G.txt B.txt dim.txt
-
-Decoder
 ./decoder 0 ResKimberly.bmp R.txt G.txt B.txt dim.txt
-
-驗證
 diff Kimberly.bmp ResKimberly.bmp
+
+# ===== Method 1 : YCbCr + DCT + Quantization =====
+./encoder 1 Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+
+./decoder 1 ResKimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+diff Kimberly.bmp ResKimberly.bmp
+
+# ===== Method 2 : DPCM + ZigZag + RLE (ASCII) =====
+./encoder 2 Kimberly.bmp ascii rle_code.txt
+./decoder 2 ResKimberly.bmp ascii rle_code.txt
+
+# ===== Method 2 : DPCM + ZigZag + RLE (Binary) =====
+./encoder 2 Kimberly.bmp binary rle_code.bin
+./decoder 2 ResKimberly.bmp binary rle_code.bin
+
+# ===== Method 3 : Huffman Coding (ASCII) =====
+./encoder 3 Kimberly.bmp ascii codebook.txt huffman_code.txt
+./decoder 3 ResKimberly.bmp ascii codebook.txt huffman_code.txt
+
+# ===== Method 3 : Huffman Coding (Binary) =====
+./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin
+./decoder 3 ResKimberly.bmp binary codebook.txt huffman_code.bin
+
