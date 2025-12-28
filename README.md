@@ -107,3 +107,13 @@ Binary 格式資料，用於驗證實際壓縮效果。
 ```bash
 gcc encoder.c -O2 -Wall -lm -o encoder
 gcc decoder.c -O2 -Wall -lm -o decoder
+
+Method 0：RGB 拆分與還原
+Encoder
+./encoder 0 Kimberly.bmp R.txt G.txt B.txt dim.txt
+
+Decoder
+./decoder 0 ResKimberly.bmp R.txt G.txt B.txt dim.txt
+
+驗證
+diff Kimberly.bmp ResKimberly.bmp
