@@ -11,23 +11,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # --------------------------------------------------
+    # Checkout
+    # --------------------------------------------------
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # --------------------------------------------------
+    # Toolchain
+    # --------------------------------------------------
     - name: Install build tools
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential python3
 
+    # --------------------------------------------------
+    # Build encoder / decoder
+    # --------------------------------------------------
     - name: Build encoder / decoder
       run: |
         gcc encoder.c -O2 -Wall -lm -o encoder
         gcc decoder.c -O2 -Wall -lm -o decoder
+        chmod +x encoder decoder
 
     # --------------------------------------------------
-    # Prepare minimal test BMP (8x8)
+    # Prepare minimal BMP (CI 沒有 Kimberly.bmp)
     # --------------------------------------------------
-    - name: Prepare test BMP
+    - name: Prepare minimal test BMP
       run: |
         python3 << 'EOF'
         import struct
@@ -50,10 +60,15 @@ jobs:
             for y in range(H):
                 row = bytearray()
                 for x in range(W):
-                    row += bytes([x*30, y*30, 128])
+                    row += bytes([x*30, y*30, 128])  # B G R
                 row += b'\x00' * (row_size - W*3)
                 f.write(row)
         EOF
+
+    # 👉 CI 用 test.bmp 當 Kimberly.bmp（不改你指令）
+    - name: Alias test.bmp as Kimberly.bmp
+      run: |
+        cp test.bmp Kimberly.bmp
 
     # --------------------------------------------------
     # Method 0
@@ -64,37 +79,44 @@ jobs:
         ./decoder 0 ResKimberly.bmp R.txt G.txt B.txt dim.txt
 
     # --------------------------------------------------
-    # Method 1 (basic)
+    # Method 1
     # --------------------------------------------------
     - name: Run Method 1
       run: |
-        ./encoder 1 Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+        ./encoder 1 Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+          qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
 
-        ./decoder 1 QResKimberly.bmp Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt qF_Y.raw qF_Cb.raw qF_Cr.raw
-        ./decoder 1 ResKimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
+        ./decoder 1 QResKimberly.bmp Kimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+          qF_Y.raw qF_Cb.raw qF_Cr.raw
+
+        ./decoder 1 ResKimberly.bmp Qt_Y.txt Qt_Cb.txt Qt_Cr.txt dim.txt \
+          qF_Y.raw qF_Cb.raw qF_Cr.raw eF_Y.raw eF_Cb.raw eF_Cr.raw
 
     # --------------------------------------------------
-    # Method 2
+    # Method 2 (ascii + binary)
     # --------------------------------------------------
     - name: Run Method 2
       run: |
-        ./encoder 2 Kimberly.bmp ascii rle_code.txt 
-        ./decoder 2 QResKimberly.bmp ascii rle_code.txt 
+        ./encoder 2 Kimberly.bmp ascii rle_code.txt
+        ./decoder 2 QResKimberly.bmp ascii rle_code.txt
 
         ./encoder 2 Kimberly.bmp binary rle_code.bin
-        ./decoder 2 QResKimberly.bmp binary rle_code.bin 
+        ./decoder 2 QResKimberly.bmp binary rle_code.bin
 
     # --------------------------------------------------
-    # Method 3
+    # Method 3 (ascii + binary)
     # --------------------------------------------------
     - name: Run Method 3
       run: |
-        ./encoder 3 Kimberly.bmp ascii codebook.txt huffman_code.txt 
-        ./decoder 3 QResKimberly.bmp ascii codebook.txt huffman_code.txt 
+        ./encoder 3 Kimberly.bmp ascii codebook.txt huffman_code.txt
+        ./decoder 3 QResKimberly.bmp ascii codebook.txt huffman_code.txt
 
-        ./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin 
-        ./decoder 3 QResKimberly.bmp binary codebook.txt huffman_code.bin 
+        ./encoder 3 Kimberly.bmp binary codebook.txt huffman_code.bin
+        ./decoder 3 QResKimberly.bmp binary codebook.txt huffman_code.bin
 
+    # --------------------------------------------------
+    # List outputs
+    # --------------------------------------------------
     - name: List outputs
       run: |
-        ls -lh
+        ls -lh || true
